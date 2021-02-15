@@ -1,0 +1,410 @@
+@startuml 七並べクラス図
+class 画面
+class 進行役
+class プレイヤー
+class テーブル
+class 手札
+class カード
+class ルール
+
+画面 -- 進行役: 描画する
+進行役 - プレイヤー: 管理する
+進行役-- テーブル: 管理する
+プレイヤー -- 手札 : 持っている
+手札 -- カード : 構成する
+プレイヤー -- テーブル : カードを置く
+プレイヤー -- ルール : 置けるカードを尋ねる
+テーブル -- ルール : 場所を探す
+
+@enduml
+
+@startuml 七並べシーケンス図（準備中）
+title 七並べシーケンス図（準備中）
+進行役 -> プレイヤー : カードを配る
+loop カードがなくなるまで
+    プレイヤー -> 手札 : 7でなければ加える
+    プレイヤー -> テーブル : 7なら置く
+end
+進行役 -> 画面 : 描画する
+@enduml
+
+@startuml 七並べシーケンス図（1ターン）
+title 七並べシーケンス図（1ターン）
+進行役 -> プレイヤー : ターンを開始する
+プレイヤー -> ルール : 出せる手札を尋ねる
+ルール -> テーブル : 置ける場所を探す
+alt 置けるカードがある
+    プレイヤー -> テーブル :カードを置く
+    プレイヤー -> 進行役: 手札が0なら上がりを報告する
+else 置けるカードがない
+    プレイヤー -> プレイヤー : パスする
+    alt パスが四回以上
+        プレイヤー -> テーブル : 手札を全て置く
+        プレイヤー -> 進行役 : 脱落を報告する
+    end
+end
+プレイヤー -> 進行役 : ターンを終了する
+
+@enduml
+
+@startuml 七並べシーケンス図（一周）
+title 七並べシーケンス図（一周）
+進行役 -> 画面 :描画を依頼する
+画面 -> テーブル: テーブルの状態を描画する
+画面 -> 進行役 : 新しく上がった人・脱落した人を描画する
+画面 -> プレイヤー : 生きているプレイヤーの名前と手札を描画する
+画面 -> プレイヤー : 上がった人の名前を描画する
+画面 -> プレイヤー: 脱落したプレイヤーの名前を描画する
+進行役 -> 進行役 : 生きているプレイヤーが\n0人の場合はゲーム終了
+@enduml
+
+' 
+' ####################
+' ver.2
+' ####################
+' 
+
+@startuml 七並べクラス図 ver.2
+title 七並べクラス図 ver.2
+class View {
+    描画する()
+}
+class Game {
+    プレイヤーの集まり
+    プレイヤーを登録する()
+    ゲームの準備を開始する()
+    上がりを報告する()
+    脱落を報告する()
+    周回を開始する()
+    描画を依頼する()
+    プレイ中のプレイヤーの人数を取得する()
+    プレイヤー一覧を更新する()
+    ゲームを終了する()
+}
+class Player {
+    名前
+    パスの回数
+    カードを配る()
+    プレーを開始する()
+    パスする()
+    名前を取得する()
+}
+class Table {
+    場にあるカード
+    カードを置く()
+    出されているカードを見る()
+}
+class CardCollection {
+    カードの集まり
+    カードのスートとランクを見る()
+    カードを加える()
+    持っている手札を見る()
+    カードを引く()
+    枚数を尋ねる()
+}
+class Card {
+    スート
+    ランク
+    カードのスートとランクを尋ねる()
+}
+class Rule {
+    出せるカードを尋ねる()
+}
+
+View -- Game: 描画する
+Game - Player: 管理する
+Game -- Table: 管理する
+Player -- CardCollection : 持っている
+CardCollection -- Card : 構成する
+Player -- Table : 置く
+Player -- Rule : 尋ねる
+Table -- Rule : 探す
+@enduml
+
+@startuml 七並べシーケンス図（準備中）ver.2
+title 七並べシーケンス図（準備中）ver.2
+
+App -> Game : プレイヤーを登録する
+App -> Game : ゲームの準備を開始する
+activate Game
+loop デッキを配り終えるまで
+    Game -> Player : カードを配る
+    activate Player
+    Player -> CardCollection : カードのスートとランクを見る
+    activate CardCollection
+    CardCollection -> Card : スートとランクを尋ねる
+    activate Card
+    return スートとランク
+    return スートとランク
+    alt ランクが7である
+        Player -> Table : カードを置く
+    else
+        Player -> CardCollection : カードを加える
+        deactivate Player
+    end
+end
+
+Game -> View : 描画する
+deactivate Game
+@enduml
+
+@startuml 七並べシーケンス図（1ターン）ver.2
+title 七並べシーケンス図（1ターン）ver.2
+
+Game -> Player : プレーを開始する
+activate Player
+Player -> Rule : 出せるカードを尋ねる
+activate Rule
+Rule -> CardCollection: 持っている手札を見る
+activate CardCollection
+return 持っている手札の一覧
+Rule -> Table : 出されているカードを見る
+activate Table
+return 場にあるカードの一覧
+return 出せるカードの一覧
+alt 置けるカードがある
+    Player -> CardCollection : 置くカードを引く
+    activate CardCollection
+    return カード
+    Player -> Table : カードを置く
+    Player -> CardCollection : 枚数を尋ねる
+    activate CardCollection
+    return 枚数
+    alt 手札の数が0
+        Player -> Game: 上がりを報告する
+    end
+else 置けるカードがない
+    Player -> Player : パスする
+    alt パスが4回以上
+        loop 手札がなくなるまで
+            Player -> Table : カードを置く
+        end
+        Player -> Game : 脱落を報告する
+    end
+end
+' Player -> Game : ターンを終了する
+deactivate Player
+@enduml
+
+
+@startuml 七並べシーケンス図（一周）ver.2
+title 七並べシーケンス図（一周）ver.2
+App -> Game : 周回を開始する
+Game -> Player : プレーを開始する
+== ターン進行 ==
+Game -> Player : （生きているプレイヤーを回す）
+== ターン終了 ==
+App -> Game : 描画を依頼する
+activate Game
+Game -> View : 描画する
+activate View
+View -> Table : 出されているカードを見る
+activate Table
+return 場にあるカードの一覧
+View -> Card : カードのスートとランクを尋ねる
+activate Card
+return カードとスートのランク
+View -> View : カードを描画
+group プレイ中のプレイヤー
+    View -> Player : 名前を取得
+    activate Player
+    return 名前
+    View -> View : プレイヤーを描画
+end
+group 新しく上がったプレイヤー
+    View -> Player : 名前を取得
+    activate Player
+    return 名前
+    View -> View : プレイヤーを描画
+    View -> Game : プレイヤー一覧を更新する
+end
+group 新しく脱落したプレイヤー
+    View -> Player : 名前を取得
+    activate Player
+    return 名前
+    View -> View: プレイヤーを描画
+    View -> Game : プレイヤー一覧を更新する
+    deactivate View
+end
+
+Game -> Game : プレイ中のプレイヤーの人数を取得
+activate Game
+return プレイ中の人数
+alt プレイ中の人数が0人
+    Game -> Game : ゲームを終了する
+else
+    App -> Game : 周回を開始する 
+end
+deactivate Game
+@enduml
+
+
+' 
+' ####################
+' ver.3
+' ####################
+' 
+
+@startuml 七並べクラス図 ver.3
+title 七並べクラス図 ver.3
+class App {
+    mount()
+}
+class View {
+    render(playersList, table)
+}
+class TableView {
+    render(table)
+}
+class PlayersListView {
+    render(playersList)
+}
+class Game {
+    playersList
+    table
+    view
+    addPlayer(player)
+    prepareGame(deck)
+    startRound()
+    cleanupPlayersList()
+    isEnd()
+    endGame()
+}
+class Player {
+    hand
+    status
+    name
+    draw(card)
+    startTurn(table)
+    passed()
+    get pass()
+    isStatusFinished()
+    isStatusRetired()
+}
+class Table {
+    cards[]
+    place(card)
+    get layout()
+}
+class CardCollection {
+    cards[]
+    add(card)
+    pick(card.index)
+    get length()
+    get cards()
+}
+class Card {
+    suit
+    rank
+    get index()
+}
+class Rule {
+    findCanPutCards(player.hand,table)
+    canFinish(player)
+    mustRetire(player)
+}
+
+App - Game : 起動する
+View -- Game: 描画する
+View - TableView: 描画する
+View - PlayersListView :描画する 
+Game - Player: 管理する
+Game -- Table: 管理する
+Player -- CardCollection : 持っている
+CardCollection -- Card : 構成する
+Player -- Table : 置く
+Player -- Rule : 尋ねる
+Table -- Rule : 探す
+@enduml
+
+@startuml 七並べシーケンス図（準備中）ver.3
+title 七並べシーケンス図（準備中）ver.3
+
+App -> Game : addPlayer(pleyer)
+App -> Game : prepareGame(deck)
+activate Game
+loop デッキを配り終えるまで
+    Game -> Player : draw(card)
+    activate Player
+    Player -> Card : get index()
+    activate Card
+    return {suit:suit, rank:rank}
+    alt ランクが7である
+        Player -> Table : place(card)
+    else
+        Player -> CardCollection : add(card)
+        deactivate Player
+    end
+end
+
+Game -> View : render(playersList,table)
+deactivate Game
+@enduml
+
+@startuml 七並べシーケンス図（1ターン）ver.3
+title 七並べシーケンス図（1ターン）ver.3
+
+Game -> Player : startTurn(table)
+activate Player
+Player -> Rule : findCanPutCards(player.hand,table)
+activate Rule
+Rule -> Table : get layout()
+activate Table
+return number[][]
+Rule -> CardCollection: get cards()
+activate CardCollection
+return card[]
+return card[]
+alt 置けるカードがある
+    Player -> CardCollection : pick(card.index)
+    activate CardCollection
+    return card
+    Player -> Table : place(card)
+    Player -> Rule : canFinish(player)
+    activate Rule
+    return boolean
+    alt true
+        Player -> Player: finished()
+    end
+else 置けるカードがない
+    Player -> Player : passed()
+    Player -> Rule : mustRetire(player)
+    activate Rule
+    return boolean
+    alt true
+        loop 手札がなくなるまで
+            Player -> Table : place(card)
+        end
+        Player -> Player : retired()
+    end
+end
+deactivate Player
+@enduml
+
+@startuml 七並べシーケンス図（一周）ver.3
+title 七並べシーケンス図（一周）ver.3
+App -> Game : startRound()
+activate Game
+Game -> Player : startTurn()
+
+== ターン進行 ==
+Game -> Player : [playersList.inPlayを回す]
+== ターン終了 ==
+
+Game -> View : render(playersList,table)
+activate View
+View -> TableView : render(table)
+View -> PlayersListView: render(playersList)
+deactivate View
+Game -> Game : cleanUpPlayersList() 
+deactivate Game
+App -> Game : isEnd()
+activate Game
+return boolean
+alt true
+    App -> Game : endGame()
+else false
+    App -> Game : startRound() 
+end
+deactivate Game
+@enduml
